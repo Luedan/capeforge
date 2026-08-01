@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Crown, LayoutGrid, LogOut, Shield, Swords } from "lucide-react";
+import { Crown, LayoutGrid, LogOut, Shield, Sparkles, Swords } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth-actions";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[250px] flex-col border-r border-line bg-[#0d130f]/95 p-5 lg:flex">
         <Logo className="px-1 py-2" />
         <nav className="mt-10 space-y-2">
+          <ShellLink href="/app/hoy" icon={Sparkles}>Para hoy <span className="ml-auto rounded-full bg-gold/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-gold">Smart</span></ShellLink>
           <ShellLink href="/app" icon={LayoutGrid}>Mis capas</ShellLink>
           <ShellLink href="/app/comp" icon={Crown}>Completionist</ShellLink>
           {user.role === "ADMIN" && <ShellLink href="/admin" icon={Shield}>Administración</ShellLink>}
@@ -35,8 +36,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
         <main className="mx-auto w-full max-w-[1500px] px-4 py-7 pb-28 sm:px-6 lg:px-9 lg:py-9">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 rounded-2xl border border-line bg-[#111814]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <MobileLink href="/app" icon={LayoutGrid}>Capas</MobileLink><MobileLink href="/app/comp" icon={Crown}>Comp</MobileLink>{user.role === "ADMIN" ? <MobileLink href="/admin" icon={Shield}>Admin</MobileLink> : <form action={logoutAction}><button className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold text-muted"><LogOut className="size-4" /> Salir</button></form>}
+      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-2xl border border-line bg-[#111814]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
+        <MobileLink href="/app/hoy" icon={Sparkles}>Hoy</MobileLink><MobileLink href="/app" icon={LayoutGrid}>Capas</MobileLink><MobileLink href="/app/comp" icon={Crown}>Comp</MobileLink>{user.role === "ADMIN" ? <MobileLink href="/admin" icon={Shield}>Admin</MobileLink> : <form action={logoutAction}><button className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold text-muted"><LogOut className="size-4" /> Salir</button></form>}
       </nav>
     </div>
   );

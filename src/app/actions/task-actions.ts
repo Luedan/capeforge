@@ -26,5 +26,6 @@ export async function toggleTaskAction(taskId: string, completed: boolean) {
 
   revalidatePath("/app");
   revalidatePath("/app/comp");
+  revalidatePath("/app/hoy");
   return { success: true };
 }

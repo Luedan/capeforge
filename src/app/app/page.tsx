@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Crown, LockKeyhole, Map, Sparkles } from "lucide-react";
+import { ArrowRight, BrainCircuit, Crown, LockKeyhole, Map, Sparkles } from "lucide-react";
 import { getCapeOverview } from "@/data/dashboard";
 import { requireUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,12 @@ export default async function CapesPage() {
         <div><span className="eyebrow"><Map className="size-3.5" /> Sala de expediciones</span><h1 className="mt-3 font-display text-4xl sm:text-5xl">Elige tu próxima leyenda.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Cada capa tiene su propio camino. Comp está abierta; las rutas más exigentes se preparan para la siguiente expedición.</p></div>
         <Badge tone="gold"><Sparkles className="mr-1 size-3" /> {capes.reduce((sum, cape) => sum + cape.completed, 0)} logros completados</Badge>
       </div>
+
+      <Link href="/app/hoy" className="group relative mt-8 flex flex-col justify-between gap-6 overflow-hidden rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-[#193021] to-[#151812] p-6 transition hover:-translate-y-0.5 hover:border-gold/35 sm:flex-row sm:items-center">
+        <div className="rune-grid pointer-events-none absolute inset-0 opacity-35" />
+        <div className="relative flex items-start gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-gold/20 bg-gold/10 text-gold-light"><BrainCircuit /></span><div><span className="text-[10px] font-bold uppercase tracking-[.18em] text-emerald-300">Nuevo · motor inteligente</span><h2 className="mt-1 font-display text-2xl">CapeForge ya puede decidir qué te conviene hacer hoy.</h2><p className="mt-1.5 max-w-3xl text-xs leading-5 text-muted">Combina tareas time-gated, victorias rápidas, grinds y el tiempo que tienes disponible.</p></div></div>
+        <span className="relative inline-flex shrink-0 items-center gap-2 text-sm font-bold text-gold-light">Ver mi briefing <ArrowRight className="transition group-hover:translate-x-1" /></span>
+      </Link>
 
       <div className="mt-9 grid gap-5 xl:grid-cols-3">
         {capes.map((cape, index) => (

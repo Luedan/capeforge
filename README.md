@@ -12,6 +12,9 @@ Tracker comunitario de requisitos para capas de RuneScape 3, construido con Next
 - Panel de capas con Completionist disponible y Trimmed/MQC preparadas para el futuro.
 - 4.155 logros importados desde `public/Comp Req.xlsx`.
 - 102 requisitos Comp, búsqueda, filtros, paginación y progreso por jugador.
+- Briefing inteligente diario que puntúa pendientes según tiempo disponible, foco personal, dificultad y tipo de actividad.
+- Detección de tareas diarias, semanales, time-gated, victorias rápidas y grinds.
+- Recomendaciones explicables, tareas fijadas y opción de posponerlas 1, 3 o 7 días.
 - Panel de administración para roles y activación de cuentas.
 
 ## Puesta en marcha

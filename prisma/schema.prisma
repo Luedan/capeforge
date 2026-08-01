@@ -13,20 +13,23 @@ enum Role {
 }
 
 model User {
-  id                     String         @id @default(cuid())
-  username               String         @unique
+  id                     String                    @id @default(cuid())
+  username               String                    @unique
   displayName            String
   passwordHash           String
   secretQuestion         String
   secretAnswerHash       String
-  role                   Role           @default(USER)
-  isActive               Boolean        @default(true)
-  recoveryFailedAttempts Int            @default(0)
+  role                   Role                      @default(USER)
+  isActive               Boolean                   @default(true)
+  recoveryFailedAttempts Int                       @default(0)
   recoveryLockedUntil    DateTime?
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  sessionMinutes         Int                       @default(45)
+  recommendationFocus    String                    @default("BALANCED")
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
   sessions               Session[]
   progress               TaskProgress[]
+  recommendationStates   TaskRecommendationState[]
 }
 
 model Session {
@@ -42,34 +45,35 @@ model Session {
 }
 
 model Cape {
-  id          String            @id @default(cuid())
-  slug        String            @unique
-  name        String
-  shortName   String
-  description String
-  isAvailable Boolean           @default(false)
-  sortOrder   Int               @default(0)
+  id           String            @id @default(cuid())
+  slug         String            @unique
+  name         String
+  shortName    String
+  description  String
+  isAvailable  Boolean           @default(false)
+  sortOrder    Int               @default(0)
   requirements CapeRequirement[]
 }
 
 model Task {
-  id                String            @id @default(cuid())
-  sourceKey         String            @unique
-  name              String
-  description       String?
-  category          String?
-  subcategory       String?
-  subsubcategory    String?
-  releaseDate       String?
-  wikiUrl           String?
-  compOrder         Int?
-  compPriority      String?
-  compDifficulty    String?
-  compTimeType      String?
-  compInstructions  String?
-  initialCompleted  Boolean           @default(false)
-  requirements      CapeRequirement[]
-  progress          TaskProgress[]
+  id                   String                    @id @default(cuid())
+  sourceKey            String                    @unique
+  name                 String
+  description          String?
+  category             String?
+  subcategory          String?
+  subsubcategory       String?
+  releaseDate          String?
+  wikiUrl              String?
+  compOrder            Int?
+  compPriority         String?
+  compDifficulty       String?
+  compTimeType         String?
+  compInstructions     String?
+  initialCompleted     Boolean                   @default(false)
+  requirements         CapeRequirement[]
+  progress             TaskProgress[]
+  recommendationStates TaskRecommendationState[]
 
   @@index([name])
   @@index([category])
@@ -79,21 +83,36 @@ model Task {
 model CapeRequirement {
   capeId    String
   taskId    String
-  sortOrder Int      @default(0)
-  cape      Cape     @relation(fields: [capeId], references: [id], onDelete: Cascade)
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sortOrder Int    @default(0)
+  cape      Cape   @relation(fields: [capeId], references: [id], onDelete: Cascade)
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@id([capeId, taskId])
   @@index([taskId])
 }
 
 model TaskProgress {
-  userId     String
-  taskId     String
+  userId      String
+  taskId      String
   completedAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@id([userId, taskId])
+  @@index([taskId])
+}
+
+model TaskRecommendationState {
+  userId       String
+  taskId       String
+  pinned       Boolean   @default(false)
+  snoozedUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([userId, taskId])
+  @@index([userId, snoozedUntil])
   @@index([taskId])
 }
