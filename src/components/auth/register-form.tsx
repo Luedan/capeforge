@@ -1,16 +1,21 @@
 "use client";
 
 import { useActionState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, LoaderCircle, Sparkles } from "lucide-react";
 import { registerAction } from "@/app/actions/auth-actions";
-import { SECRET_QUESTIONS } from "@/lib/auth-constants";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClassName } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RecoveryCodesPanel } from "@/components/recovery-codes-panel";
 
 function ErrorText({ messages }: { messages?: string[] }) { return messages?.[0] ? <p className="mt-1.5 text-xs text-red-300">{messages[0]}</p> : null; }
 
-export function RegisterForm() {
+export function RegisterForm({ authenticated = false }: { authenticated?: boolean }) {
   const [state, action, pending] = useActionState(registerAction, undefined);
+  if (state?.registered && state.recoveryCodes) {
+    return <div className="space-y-5"><RecoveryCodesPanel codes={state.recoveryCodes} /><Link href="/app" className={buttonClassName({ size: "lg", className: "w-full" })}>Ya los guardé, ir a mi panel <ArrowRight /></Link></div>;
+  }
+  if (authenticated) return <div className="rounded-2xl border border-gold/20 bg-gold/[.06] p-5 text-center"><p className="text-sm text-muted">Ya tienes una sesión activa en CapeForge.</p><Link href="/app" className={buttonClassName({ className: "mt-4 w-full" })}>Volver a mi panel <ArrowRight /></Link></div>;
   return (
     <form action={action} className="space-y-4">
       {state?.error && <p className="rounded-xl border border-red-400/20 bg-red-400/8 px-4 py-3 text-sm text-red-300">{state.error}</p>}
@@ -20,8 +25,6 @@ export function RegisterForm() {
         <div><label className="field-label" htmlFor="password">Contraseña</label><Input id="password" name="password" type="password" autoComplete="new-password" required /><ErrorText messages={state?.fieldErrors?.password} /></div>
         <div><label className="field-label" htmlFor="confirmPassword">Confirmar</label><Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required /><ErrorText messages={state?.fieldErrors?.confirmPassword} /></div>
       </div>
-      <div><label className="field-label" htmlFor="secretQuestion">Pregunta secreta</label><select className="select-field" id="secretQuestion" name="secretQuestion" defaultValue="" required><option value="" disabled>Elige una pregunta</option>{SECRET_QUESTIONS.map((question) => <option key={question} value={question}>{question}</option>)}</select><ErrorText messages={state?.fieldErrors?.secretQuestion} /></div>
-      <div><label className="field-label" htmlFor="secretAnswer">Respuesta secreta</label><Input id="secretAnswer" name="secretAnswer" type="password" autoComplete="off" placeholder="Guárdala en un lugar seguro" required /><ErrorText messages={state?.fieldErrors?.secretAnswer} /></div>
       <Button className="w-full" size="lg" disabled={pending}>{pending ? <LoaderCircle className="animate-spin" /> : <Sparkles />} Crear mi cuenta</Button>
     </form>
   );

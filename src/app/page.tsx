@@ -4,6 +4,7 @@ import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { buttonClassName } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth";
 
 const sampleTasks = [
   { name: "Port Life", group: "Player Owned Port", done: true },
@@ -12,7 +13,9 @@ const sampleTasks = [
   { name: "Annihilator", group: "Lore", done: true },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const user = await getCurrentUser();
+
   return (
     <main className="site-shell overflow-hidden">
       <div className="rune-grid pointer-events-none absolute inset-x-0 top-0 h-[850px]" />
@@ -23,8 +26,8 @@ export default function LandingPage() {
           <a href="#comunidad" className="transition hover:text-cream">Comunidad</a>
           <a href="#progreso" className="transition hover:text-cream">Progreso</a>
         </div>
-        <Link href="/login" className={buttonClassName({ variant: "outline", size: "sm" })}>
-          Iniciar sesión <ArrowRight />
+        <Link href={user ? "/app" : "/login"} className={buttonClassName({ variant: user ? "default" : "outline", size: "sm" })}>
+          {user ? `Volver como ${user.displayName}` : "Iniciar sesión"} <ArrowRight />
         </Link>
       </nav>
 
@@ -38,8 +41,8 @@ export default function LandingPage() {
             Tu mapa personal hacia la Completionist Cape. Organiza requisitos, marca victorias y comparte el camino con quienes entienden el grind.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href="/registro" className={buttonClassName({ size: "lg" })}>
-              Empezar mi ruta <ChevronRight />
+            <Link href={user ? "/app" : "/registro"} className={buttonClassName({ size: "lg" })}>
+              {user ? "Volver a mi panel" : "Empezar mi ruta"} <ChevronRight />
             </Link>
             <a href="#ruta" className={buttonClassName({ variant: "secondary", size: "lg" })}>Explorar CapeForge</a>
           </div>
@@ -133,7 +136,7 @@ export default function LandingPage() {
           <Crown className="relative mx-auto size-9 text-gold-light" />
           <h2 className="relative mt-5 font-display text-4xl sm:text-5xl">La capa no se consigue sola.</h2>
           <p className="relative mx-auto mt-4 max-w-xl text-muted">Pero el camino se siente mucho mejor cuando sabes exactamente cuál es tu próxima victoria.</p>
-          <Link href="/registro" className={buttonClassName({ size: "lg", className: "relative mt-8" })}>Crear mi cuenta <ArrowRight /></Link>
+          <Link href={user ? "/app" : "/registro"} className={buttonClassName({ size: "lg", className: "relative mt-8" })}>{user ? "Continuar mi aventura" : "Crear mi cuenta"} <ArrowRight /></Link>
         </div>
       </section>
 

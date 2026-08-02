@@ -73,6 +73,8 @@ export async function getSmartRecommendations(userId: string) {
         description: true,
         category: true,
         subcategory: true,
+        subsubcategory: true,
+        releaseDate: true,
         wikiUrl: true,
         compPriority: true,
         compDifficulty: true,

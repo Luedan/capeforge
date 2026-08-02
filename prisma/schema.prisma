@@ -17,8 +17,6 @@ model User {
   username               String                    @unique
   displayName            String
   passwordHash           String
-  secretQuestion         String
-  secretAnswerHash       String
   role                   Role                      @default(USER)
   isActive               Boolean                   @default(true)
   recoveryFailedAttempts Int                       @default(0)
@@ -28,8 +26,20 @@ model User {
   createdAt              DateTime                  @default(now())
   updatedAt              DateTime                  @updatedAt
   sessions               Session[]
+  recoveryCodes          RecoveryCode[]
   progress               TaskProgress[]
   recommendationStates   TaskRecommendationState[]
+}
+
+model RecoveryCode {
+  id        String    @id @default(cuid())
+  codeHash  String    @unique
+  userId    String
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
 }
 
 model Session {

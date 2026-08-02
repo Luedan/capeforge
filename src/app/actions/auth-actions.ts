@@ -5,11 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import { createSession, destroySession } from "@/lib/auth";
-import { SECRET_QUESTIONS } from "@/lib/auth-constants";
+import { createSession, destroySession, getCurrentUser } from "@/lib/auth";
+import { generateRecoveryCodes, hashRecoveryCode, recoveryCodeRows } from "@/lib/recovery-codes";
 
-export type AuthState = { error?: string; fieldErrors?: Record<string, string[]> } | undefined;
-export type RecoveryLookupState = { error?: string; username?: string; question?: string } | undefined;
+export type AuthState = { error?: string; fieldErrors?: Record<string, string[]>; recoveryCodes?: string[]; registered?: boolean } | undefined;
 
 const usernameSchema = z
   .string()
@@ -31,8 +30,6 @@ const registerSchema = z
     username: usernameSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
-    secretQuestion: z.enum(SECRET_QUESTIONS),
-    secretAnswer: z.string().trim().min(3, "La respuesta debe tener al menos 3 caracteres").max(80),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
@@ -44,14 +41,13 @@ function fields(formData: FormData) {
 }
 
 export async function registerAction(_state: AuthState, formData: FormData): Promise<AuthState> {
+  if (await getCurrentUser()) return { error: "Ya tienes una sesión activa. Vuelve a tu panel." };
   const parsed = registerSchema.safeParse(fields(formData));
   if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
 
-  const { displayName, username, password, secretQuestion, secretAnswer } = parsed.data;
-  const [passwordHash, secretAnswerHash] = await Promise.all([
-    hash(password, 12),
-    hash(secretAnswer.trim().toLowerCase(), 12),
-  ]);
+  const { displayName, username, password } = parsed.data;
+  const passwordHash = await hash(password, 12);
+  const recoveryCodes = generateRecoveryCodes();
 
   let user: { id: string };
   try {
@@ -62,9 +58,8 @@ export async function registerAction(_state: AuthState, formData: FormData): Pro
           displayName,
           username,
           passwordHash,
-          secretQuestion,
-          secretAnswerHash,
           role: userCount === 0 ? "ADMIN" : "USER",
+          recoveryCodes: { create: recoveryCodeRows(recoveryCodes) },
         },
         select: { id: true },
       });
@@ -91,7 +86,7 @@ export async function registerAction(_state: AuthState, formData: FormData): Pro
   }
 
   await createSession(user.id);
-  redirect("/app");
+  return { registered: true, recoveryCodes };
 }
 
 const loginSchema = z.object({ username: usernameSchema, password: z.string().min(1) });
@@ -115,21 +110,9 @@ export async function logoutAction() {
   redirect("/");
 }
 
-export async function lookupRecoveryAction(_state: RecoveryLookupState, formData: FormData): Promise<RecoveryLookupState> {
-  const parsed = usernameSchema.safeParse(formData.get("username"));
-  if (!parsed.success) return { error: "Escribe un usuario válido." };
-
-  const user = await db.user.findUnique({
-    where: { username: parsed.data },
-    select: { username: true, secretQuestion: true, isActive: true },
-  });
-  if (!user || !user.isActive) return { error: "No encontramos una cuenta activa con ese usuario." };
-  return { username: user.username, question: user.secretQuestion };
-}
-
 const resetSchema = z.object({
   username: usernameSchema,
-  secretAnswer: z.string().trim().min(1),
+  recoveryCode: z.string().trim().min(1, "Escribe uno de tus códigos de recuperación"),
   password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -142,13 +125,16 @@ export async function resetPasswordAction(_state: AuthState, formData: FormData)
   if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
 
   const user = await db.user.findUnique({ where: { username: parsed.data.username } });
-  if (!user || !user.isActive) return { error: "No pudimos recuperar esa cuenta." };
+  if (!user || !user.isActive) return { error: "El usuario o el código de recuperación no son válidos." };
   if (user.recoveryLockedUntil && user.recoveryLockedUntil > new Date()) {
     return { error: "Demasiados intentos. Espera 15 minutos antes de volver a intentar." };
   }
 
-  const answerOk = await compare(parsed.data.secretAnswer.trim().toLowerCase(), user.secretAnswerHash);
-  if (!answerOk) {
+  const recoveryCode = await db.recoveryCode.findFirst({
+    where: { userId: user.id, codeHash: hashRecoveryCode(parsed.data.recoveryCode), usedAt: null },
+    select: { id: true },
+  });
+  if (!recoveryCode) {
     const attempts = user.recoveryFailedAttempts + 1;
     await db.user.update({
       where: { id: user.id },
@@ -157,17 +143,18 @@ export async function resetPasswordAction(_state: AuthState, formData: FormData)
         recoveryLockedUntil: attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
       },
     });
-    return { error: "La respuesta secreta no coincide." };
+    return { error: "El usuario o el código de recuperación no son válidos." };
   }
 
   const passwordHash = await hash(parsed.data.password, 12);
-  await db.$transaction([
-    db.user.update({
-      where: { id: user.id },
-      data: { passwordHash, recoveryFailedAttempts: 0, recoveryLockedUntil: null },
-    }),
-    db.session.deleteMany({ where: { userId: user.id } }),
-  ]);
+  const consumed = await db.$transaction(async (tx) => {
+    const result = await tx.recoveryCode.updateMany({ where: { id: recoveryCode.id, usedAt: null }, data: { usedAt: new Date() } });
+    if (result.count !== 1) return false;
+    await tx.user.update({ where: { id: user.id }, data: { passwordHash, recoveryFailedAttempts: 0, recoveryLockedUntil: null } });
+    await tx.session.deleteMany({ where: { userId: user.id } });
+    return true;
+  });
+  if (!consumed) return { error: "Ese código ya fue utilizado. Prueba con otro." };
 
   await createSession(user.id);
   redirect("/app");

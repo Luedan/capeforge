@@ -1,5 +1,6 @@
 import { AlarmClock, ArrowUpRight, Brain, CalendarDays, Clock3, Sparkles } from "lucide-react";
 import { RecommendationControls } from "@/components/recommendation-controls";
+import { TaskDetailDialog, TaskDetailTrigger } from "@/components/task-detail-dialog";
 import { TaskToggle } from "@/components/task-toggle";
 import { Badge } from "@/components/ui/badge";
 import type { SmartTask } from "@/data/recommendations";
@@ -27,7 +28,7 @@ export function SmartTaskCard({ task, index, featured = false }: { task: SmartTa
             {cadence && <Badge tone="green"><CalendarDays className="mr-1 size-3" />{cadence}</Badge>}
             {task.pinned && <Badge tone="gold">Prioridad tuya</Badge>}
           </div>
-          <h3 className={cn("mt-3 font-display text-xl leading-tight text-cream", featured && "text-2xl")}>{task.name}</h3>
+          <TaskDetailDialog task={task}><TaskDetailTrigger className="mt-3 rounded-lg"><h3 className={cn("font-display text-xl leading-tight text-cream transition hover:text-gold-light", featured && "text-2xl")}>{task.name}</h3></TaskDetailTrigger></TaskDetailDialog>
           <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted">{task.compInstructions ?? task.description ?? "Consulta la wiki para conocer todos los pasos."}</p>
 
           <div className="mt-4 rounded-xl border border-emerald-400/10 bg-emerald-400/[.045] px-3.5 py-3">

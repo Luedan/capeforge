@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { generateRecoveryCodes, recoveryCodeRows } from "@/lib/recovery-codes";
 
 export async function setUserActiveAction(userId: string, isActive: boolean) {
   const admin = await requireAdmin();
@@ -28,4 +29,21 @@ export async function setUserRoleAction(userId: string, role: "ADMIN" | "USER") 
 
   await db.user.update({ where: { id }, data: { role: safeRole } });
   revalidatePath("/admin");
+}
+
+export async function regenerateUserRecoveryCodesAction(userId: string) {
+  await requireAdmin();
+  const id = z.string().min(1).parse(userId);
+  const target = await db.user.findUnique({ where: { id }, select: { id: true, isActive: true } });
+  if (!target) throw new Error("El usuario no existe");
+  if (!target.isActive) throw new Error("Activa la cuenta antes de generar códigos");
+
+  const codes = generateRecoveryCodes();
+  await db.$transaction(async (tx) => {
+    await tx.recoveryCode.deleteMany({ where: { userId: id } });
+    await tx.recoveryCode.createMany({ data: recoveryCodeRows(codes).map((code) => ({ ...code, userId: id })) });
+    await tx.user.update({ where: { id }, data: { recoveryFailedAttempts: 0, recoveryLockedUntil: null } });
+  });
+  revalidatePath("/admin");
+  return { codes };
 }
