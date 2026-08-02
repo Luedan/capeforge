@@ -15,7 +15,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
         <nav className="mt-10 space-y-2">
           <ShellLink href="/app/hoy" icon={Sparkles}>Para hoy <span className="ml-auto rounded-full bg-gold/10 px-2 py-0.5 text-[9px] uppercase tracking-wider text-gold">Smart</span></ShellLink>
           <ShellLink href="/app" icon={LayoutGrid}>Mis capas</ShellLink>
-          <ShellLink href="/app/comp" icon={Crown}>Completionist</ShellLink>
+          <ShellLink href="/app/capas/completionist" icon={Crown}>Completionist</ShellLink>
           <ShellLink href="/app/tareas" icon={Database}>Todas las tareas</ShellLink>
           {user.role === "ADMIN" && <ShellLink href="/admin" icon={Shield}>Administración</ShellLink>}
         </nav>
@@ -38,7 +38,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       </div>
 
       <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-2xl border border-line bg-[#111814]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <MobileLink href="/app/hoy" icon={Sparkles}>Hoy</MobileLink><MobileLink href="/app" icon={LayoutGrid}>Capas</MobileLink><MobileLink href="/app/comp" icon={Crown}>Comp</MobileLink><MobileLink href="/app/tareas" icon={Database}>Todas</MobileLink>{user.role === "ADMIN" ? <MobileLink href="/admin" icon={Shield}>Admin</MobileLink> : <form action={logoutAction}><button className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold text-muted"><LogOut className="size-4" /> Salir</button></form>}
+        <MobileLink href="/app/hoy" icon={Sparkles}>Hoy</MobileLink><MobileLink href="/app" icon={LayoutGrid}>Capas</MobileLink><MobileLink href="/app/capas/completionist" icon={Crown}>Comp</MobileLink><MobileLink href="/app/tareas" icon={Database}>Todas</MobileLink>{user.role === "ADMIN" ? <MobileLink href="/admin" icon={Shield}>Admin</MobileLink> : <form action={logoutAction}><button className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-semibold text-muted"><LogOut className="size-4" /> Salir</button></form>}
       </nav>
     </div>
   );

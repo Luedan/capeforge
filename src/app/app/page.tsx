@@ -16,7 +16,7 @@ export default async function CapesPage() {
   return (
     <div>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><span className="eyebrow"><Map className="size-3.5" /> Sala de expediciones</span><h1 className="mt-3 font-display text-4xl sm:text-5xl">Elige tu próxima leyenda.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Cada capa tiene su propio camino. Comp está abierta; las rutas más exigentes se preparan para la siguiente expedición.</p></div>
+        <div><span className="eyebrow"><Map className="size-3.5" /> Sala de expediciones</span><h1 className="mt-3 font-display text-4xl sm:text-5xl">Elige tu próxima leyenda.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Completionist, Trimmed y Master Quest Cape ya tienen rutas independientes, progreso propio y recomendaciones inteligentes.</p></div>
         <Badge tone="gold"><Sparkles className="mr-1 size-3" /> {capes.reduce((sum, cape) => sum + cape.completed, 0)} logros completados</Badge>
       </div>
 
@@ -37,7 +37,7 @@ export default async function CapesPage() {
             <div className="relative mt-9"><span className="text-[10px] font-bold uppercase tracking-[.18em] text-muted">Ruta 0{index + 1}</span><h2 className="mt-2 font-display text-3xl">{cape.name}</h2><p className="mt-3 min-h-12 text-sm leading-6 text-muted">{cape.description}</p></div>
             {cape.isAvailable ? (
               <div className="relative mt-8">
-                <div className="mb-2 flex items-center justify-between text-xs"><span className="text-muted">Tu progreso</span><strong>{cape.completed} / {cape.total}</strong></div><Progress value={cape.percent} /><div className="mt-6 flex items-center justify-between"><strong className="font-display text-3xl text-gold-light">{cape.percent}%</strong><Link href="/app/comp" className={buttonClassName({ size: "sm" })}>Continuar <ArrowRight /></Link></div>
+                <div className="mb-2 flex items-center justify-between text-xs"><span className="text-muted">Tu progreso</span><strong>{cape.completed} / {cape.total}</strong></div><Progress value={cape.percent} /><div className="mt-6 flex items-center justify-between"><strong className="font-display text-3xl text-gold-light">{cape.percent}%</strong><Link href={`/app/capas/${cape.slug}`} className={buttonClassName({ size: "sm" })}>Continuar <ArrowRight /></Link></div>
               </div>
             ) : <div className="relative mt-8 h-[85px] rounded-2xl border border-dashed border-line bg-black/10 p-4 text-xs leading-5 text-muted">Esta sala se abrirá cuando su catálogo de requisitos esté listo.</div>}
           </article>

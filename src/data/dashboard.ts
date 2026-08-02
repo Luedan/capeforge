@@ -24,14 +24,19 @@ export type TaskFilters = {
   page?: number;
 };
 
-export async function getCompDashboard(userId: string, filters: TaskFilters) {
+export async function getCapeDashboard(userId: string, capeSlug: string, filters: TaskFilters) {
+  const cape = await db.cape.findFirst({
+    where: { slug: capeSlug, isAvailable: true },
+    select: { id: true, slug: true, name: true, shortName: true, description: true },
+  });
+  if (!cape) return null;
   const pageSize = 20;
   const page = Math.max(1, filters.page ?? 1);
   const status = filters.status ?? "all";
   const search = filters.q?.trim();
 
   const where = {
-    requirements: { some: { cape: { slug: "completionist" } } },
+    requirements: { some: { capeId: cape.id } },
     ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
     ...(filters.category ? { category: filters.category } : {}),
     ...(status === "completed" ? { progress: { some: { userId } } } : {}),
@@ -61,16 +66,16 @@ export async function getCompDashboard(userId: string, filters: TaskFilters) {
       },
     }),
     db.task.count({ where }),
-    db.capeRequirement.count({ where: { cape: { slug: "completionist" } } }),
-    db.taskProgress.count({ where: { userId, task: { requirements: { some: { cape: { slug: "completionist" } } } } } }),
+    db.capeRequirement.count({ where: { capeId: cape.id } }),
+    db.taskProgress.count({ where: { userId, task: { requirements: { some: { capeId: cape.id } } } } }),
     db.task.findMany({
-      where: { requirements: { some: { cape: { slug: "completionist" } } }, category: { not: null } },
+      where: { requirements: { some: { capeId: cape.id } }, category: { not: null } },
       distinct: ["category"],
       select: { category: true },
       orderBy: { category: "asc" },
     }),
     db.taskProgress.findMany({
-      where: { userId, task: { requirements: { some: { cape: { slug: "completionist" } } } } },
+      where: { userId, task: { requirements: { some: { capeId: cape.id } } } },
       orderBy: { completedAt: "desc" },
       take: 3,
       select: { completedAt: true, task: { select: { name: true } } },
@@ -78,6 +83,7 @@ export async function getCompDashboard(userId: string, filters: TaskFilters) {
   ]);
 
   return {
+    cape,
     tasks: tasks.map((task) => ({ ...task, completedAt: task.progress[0]?.completedAt ?? null, progress: undefined })),
     filteredTotal,
     total,

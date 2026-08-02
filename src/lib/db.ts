@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prisma
 
 // Bump this value with each Prisma migration so a running dev server never
 // reuses a client instance generated from an older schema after hot reload.
-const schemaFingerprint = "20260801130000_recovery_codes";
+const schemaFingerprint = "20260801150000_recommendation_goals";
 
 function createClient() {
   const connectionString = process.env.DATABASE_URL;

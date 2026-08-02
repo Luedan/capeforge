@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { BookOpen, Crown, Database, Search, Sparkles } from "lucide-react";
+import { BookOpen, BrainCircuit, Crown, Database, Search, Sparkles } from "lucide-react";
+import { selectRecommendationTargetAction } from "@/app/actions/recommendation-actions";
 import { TaskDataTable } from "@/components/task-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Search
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-line bg-black/20 px-5 py-4 text-center"><Database className="mx-auto size-5 text-gold" /><strong className="mt-2 block font-display text-3xl">{data.total.toLocaleString("es-CO")}</strong><span className="text-[10px] uppercase tracking-[.14em] text-muted">en esta vista</span></div>
             <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/[.05] px-5 py-4 text-center"><Crown className="mx-auto size-5 text-emerald-300" /><strong className="mt-2 block font-display text-3xl">{data.compTotal.toLocaleString("es-CO")}</strong><span className="text-[10px] uppercase tracking-[.14em] text-muted">Completionist</span></div>
+            <form action={selectRecommendationTargetAction} className="col-span-2"><input type="hidden" name="target" value="all" /><Button type="submit" className="w-full"><BrainCircuit /> Crear ruta inteligente global</Button></form>
           </div>
         </div>
       </section>

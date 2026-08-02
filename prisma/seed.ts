@@ -62,12 +62,20 @@ for (const cape of capes) {
   await prisma.cape.upsert({
     where: { slug: cape.slug },
     create: cape,
-    update: cape,
+    update: {
+      name: cape.name,
+      shortName: cape.shortName,
+      description: cape.description,
+      sortOrder: cape.sortOrder,
+    },
   });
 }
 
 for (let offset = 0; offset < tasks.length; offset += 400) {
-  const batch = tasks.slice(offset, offset + 400).map(({ isComp: _isComp, ...task }) => task);
+  const batch = tasks.slice(offset, offset + 400).map(({ isComp, ...task }) => {
+    void isComp;
+    return task;
+  });
   await prisma.task.createMany({ data: batch, skipDuplicates: true });
 }
 

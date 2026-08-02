@@ -11,19 +11,22 @@ function normalized(value: string | null | undefined) {
   return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-function estimateMinutes(task: { compTimeType: string | null; compDifficulty: string | null }) {
+function estimateMinutes(task: { description: string | null; category: string | null; subcategory: string | null; compTimeType: string | null; compDifficulty: string | null }) {
   const time = normalized(task.compTimeType);
+  const context = normalized(`${task.category ?? ""} ${task.subcategory ?? ""} ${task.description ?? ""}`);
   if (time.includes("inmediato")) return 15;
   if (time.includes("time-gated")) return 20;
   if (time.includes("grind corto")) return 45;
   if (time.includes("grind largo")) return 120;
   if (time.includes("combate")) return 60;
-  if (time.includes("misiones")) return 90;
-  if (time.includes("por niveles")) return 90;
+  if (time.includes("misiones") || time.includes("por niveles")) return 90;
+  if (/diari[oa]|cada dia|todos los dias|daily|semanal|weekly/.test(context)) return 20;
   const difficulty = normalized(task.compDifficulty);
   if (difficulty.includes("facil")) return 30;
   if (difficulty.includes("media")) return 60;
-  return 90;
+  if (/boss|combat|combate|slayer/.test(context)) return 60;
+  if (/miniquest|quest|mision/.test(context)) return 75;
+  return 45;
 }
 
 function cadenceFor(task: { description: string | null; compInstructions: string | null; compTimeType: string | null }) {
@@ -57,16 +60,28 @@ export async function getSmartRecommendations(userId: string) {
   const now = new Date();
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", dateStyle: "short" }).format(now);
 
-  const [user, tasks, recentProgress] = await Promise.all([
+  const [user, availableCapes] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { sessionMinutes: true, recommendationFocus: true },
-    }),
-    db.task.findMany({
-      where: {
-        requirements: { some: { cape: { slug: "completionist", isAvailable: true } } },
-        progress: { none: { userId } },
+      select: {
+        sessionMinutes: true,
+        recommendationFocus: true,
+        recommendationCape: { select: { id: true, slug: true, name: true, shortName: true, isAvailable: true } },
       },
+    }),
+    db.cape.findMany({
+      where: { isAvailable: true },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, slug: true, name: true, shortName: true },
+    }),
+  ]);
+
+  const targetCape = user.recommendationCape?.isAvailable ? user.recommendationCape : null;
+  const taskScope = targetCape ? { requirements: { some: { capeId: targetCape.id } } } : {};
+
+  const [tasks, recentProgress] = await Promise.all([
+    db.task.findMany({
+      where: { ...taskScope, progress: { none: { userId } } },
       select: {
         id: true,
         name: true,
@@ -80,6 +95,7 @@ export async function getSmartRecommendations(userId: string) {
         compDifficulty: true,
         compTimeType: true,
         compInstructions: true,
+        requirements: { select: { cape: { select: { slug: true, shortName: true } } } },
         recommendationStates: {
           where: { userId },
           select: { pinned: true, snoozedUntil: true },
@@ -88,7 +104,7 @@ export async function getSmartRecommendations(userId: string) {
       },
     }),
     db.taskProgress.findMany({
-      where: { userId, task: { requirements: { some: { cape: { slug: "completionist" } } } } },
+      where: { userId, task: taskScope },
       orderBy: { completedAt: "desc" },
       take: 8,
       select: { task: { select: { category: true } } },
@@ -110,8 +126,8 @@ export async function getSmartRecommendations(userId: string) {
       const category = normalized(task.category);
       const isTimeGated = timeType.includes("time-gated") || cadence !== "NONE" || task.compPriority?.startsWith("01.");
       const isQuick = timeType.includes("inmediato") || minutes <= 30;
-      const isGrind = timeType.includes("grind");
-      const isCombat = timeType.includes("combate") || category.includes("combat");
+      const isGrind = timeType.includes("grind") || /farming|training|skilling|farmeo/.test(normalized(`${task.description ?? ""} ${task.category ?? ""}`));
+      const isCombat = timeType.includes("combate") || /combat|combate|boss|slayer/.test(category);
       const pinned = task.recommendationStates[0]?.pinned ?? false;
       const reasons: string[] = [];
       let score = 50 + stableDailyBoost(`${userId}:${task.id}:${dayKey}`);
@@ -129,10 +145,13 @@ export async function getSmartRecommendations(userId: string) {
       if (focus === "GRIND" && isGrind) { score += 110; reasons.unshift("Aprovecha tu bloque de farmeo"); }
       if (focus === "COMBAT" && isCombat) { score += 110; reasons.unshift("Coincide con tu foco de combate"); }
       if (focus === "BALANCED" && !recentCategories.includes(task.category)) reasons.push("Añade variedad a tu progreso");
+      if (!reasons.length) reasons.push("Mueve tu objetivo actual");
 
       return {
         ...task,
         recommendationStates: undefined,
+        requirements: undefined,
+        capes: task.requirements.map((requirement) => requirement.cape),
         minutes,
         cadence: cadence as Cadence,
         pinned,
@@ -160,9 +179,20 @@ export async function getSmartRecommendations(userId: string) {
   const timeGated = candidates.filter((task) => task.isTimeGated).slice(0, 6);
   const quickWins = candidates.filter((task) => task.isQuick).slice(0, 4);
   const grinds = candidates.filter((task) => task.isGrind).slice(0, 4);
+  const targetLabel = targetCape?.name ?? "Todos los logros de RuneScape 3";
 
   return {
-    settings: { sessionMinutes: user.sessionMinutes, focus, focusLabel: focusLabel(focus) },
+    settings: {
+      sessionMinutes: user.sessionMinutes,
+      focus,
+      focusLabel: focusLabel(focus),
+      targetId: targetCape?.id ?? "all",
+      targetLabel,
+      targets: [
+        { id: "all", label: "Todos los logros", detail: "Catálogo global de RuneScape 3" },
+        ...availableCapes.map((cape) => ({ id: cape.id, label: cape.name, detail: `Solo requisitos de ${cape.shortName}` })),
+      ],
+    },
     dailyPlan,
     timeGated,
     quickWins,

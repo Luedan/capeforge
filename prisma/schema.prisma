@@ -23,12 +23,16 @@ model User {
   recoveryLockedUntil    DateTime?
   sessionMinutes         Int                       @default(45)
   recommendationFocus    String                    @default("BALANCED")
+  recommendationCapeId   String?
   createdAt              DateTime                  @default(now())
   updatedAt              DateTime                  @updatedAt
   sessions               Session[]
   recoveryCodes          RecoveryCode[]
   progress               TaskProgress[]
   recommendationStates   TaskRecommendationState[]
+  recommendationCape     Cape?                     @relation("RecommendationGoal", fields: [recommendationCapeId], references: [id], onDelete: SetNull)
+
+  @@index([recommendationCapeId])
 }
 
 model RecoveryCode {
@@ -63,6 +67,7 @@ model Cape {
   isAvailable  Boolean           @default(false)
   sortOrder    Int               @default(0)
   requirements CapeRequirement[]
+  recommendationUsers User[]            @relation("RecommendationGoal")
 }
 
 model Task {
